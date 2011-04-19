@@ -17,6 +17,7 @@ class VersionBurndownChartsController < ApplicationController
     
     estimated_data_array = []
     performance_data_array = []
+    perfect_data_array = []
     x_labels_data = []
     
     index_date = @start_date - 1
@@ -44,6 +45,7 @@ class VersionBurndownChartsController < ApplicationController
       
       estimated_data_array << round(index_estimated_hours -= calc_estimated_hours_by_date(index_date))
       performance_data_array << round(index_performance_hours -= calc_performance_hours_by_date(index_date))
+      perfect_data_array << 0
       
       logger.debug("#{index_date} index_estimated_hours #{round(index_estimated_hours)}")
       logger.debug("#{index_date} index_performance_hours #{round(index_performance_hours)}")
@@ -52,10 +54,12 @@ class VersionBurndownChartsController < ApplicationController
       count += 1
     end
 
-    create_graph(x_labels_data, estimated_data_array, performance_data_array)
+    perfect_data_array.fill {|i| @estimated_hours - (@estimated_hours / @sprint_range * i) }
+
+    create_graph(x_labels_data, estimated_data_array, performance_data_array, perfect_data_array)
   end
 
-  def create_graph(x_labels_data, estimated_data_array, performance_data_array)
+  def create_graph(x_labels_data, estimated_data_array, performance_data_array, perfect_data_array)
     chart =OpenFlashChart.new
     chart.set_title(Title.new("#{@version.name} #{l(:version_burndown_charts)}"))
     chart.set_bg_colour('#ffffff');
@@ -92,6 +96,14 @@ class VersionBurndownChartsController < ApplicationController
     performance_line.dot_size = 6
     performance_line.values = performance_data_array
     chart.add_element(performance_line)
+
+    perfect_line = Line.new
+    perfect_line.text = "#{l(:version_burndown_charts_perfect_line)}"
+    perfect_line.width = 3
+    perfect_line.colour = '#bbbbbb'
+    perfect_line.dot_size = 6
+    perfect_line.values = perfect_data_array
+    chart.add_element(perfect_line)
 
     render :text => chart.to_s
   end
