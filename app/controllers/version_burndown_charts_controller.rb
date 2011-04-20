@@ -73,12 +73,12 @@ class VersionBurndownChartsController < ApplicationController
     chart.set_y_legend(y_legend)
 
     x = XAxis.new
-    x.set_range(0, @sprint_range + 2, 1)
+    x.set_range(0, @sprint_range + 1, 1)
     x.set_labels(x_labels_data)
     chart.x_axis = x
 
     y = YAxis.new
-    y.set_range(0, @estimated_hours + 1, (@estimated_hours / 4).round)
+    y.set_range(0, @estimated_hours + 1, (@estimated_hours / 6).round)
     chart.y_axis = y
 
     estimated_line = Line.new
