@@ -46,7 +46,7 @@ class VersionBurndownChartsController < ApplicationController
       estimated_data_array << round(index_estimated_hours -= calc_estimated_hours_by_date(index_date))
       performance_data_array << round(index_performance_hours -= calc_performance_hours_by_date(index_date))
       perfect_data_array << 0
-      
+
       logger.debug("#{index_date} index_estimated_hours #{round(index_estimated_hours)}")
       logger.debug("#{index_date} index_performance_hours #{round(index_performance_hours)}")
       
@@ -55,7 +55,6 @@ class VersionBurndownChartsController < ApplicationController
     end
 
     perfect_data_array.fill {|i| (@estimated_hours - (@estimated_hours / @sprint_range * i)).round }
-
     create_graph(x_labels_data, estimated_data_array, performance_data_array, perfect_data_array)
   end
 
@@ -152,11 +151,21 @@ class VersionBurndownChartsController < ApplicationController
   end
 
   def find_project
-    render_error(l(:version_burndown_charts_project_nod_found, :project_id => 'parameter not found.')) and return unless params[:project_id]
+
+    logger.debug("params[:project_id].class #{params[:project_id].class}")
+
+    if params[:project_id].blank?
+      flash[:error] = l(:version_burndown_charts_project_nod_found, :project_id => 'parameter not found.')
+      render_404
+      return
+    end
+
     begin
       @project = Project.find(params[:project_id])
-    rescue ActiveRecord::NotFound
-      render_error(l(:version_burndown_charts_project_nod_found, :project_id => params[:project_id])) and return unless @project
+    rescue ActiveRecord::RecordNotFound
+      flash[:error] = l(:version_burndown_charts_project_nod_found, :project_id => params[:project_id])
+      render_404
+      return
     end 
   end
 
@@ -172,7 +181,14 @@ class VersionBurndownChartsController < ApplicationController
       @version = @open_versions.first || versions.last
     end
 
-    render_error(l(:version_burndown_charts_version_not_found)) and return unless @version
+    logger.debug("@version.class #{@version.class}")
+    logger.debug("@version.nil? #{@version.nil?}")
+
+    if @version.blank?
+      flash[:error] = l(:version_burndown_charts_no_version_with_due_date)
+      render_404
+      return
+    end
 
     unless @version.due_date
       flash[:error] = l(:version_burndown_charts_version_due_date_not_found, :version_name => @version.name)
